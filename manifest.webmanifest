@@ -1,0 +1,19 @@
+{
+  "name": "OD Jegyzetek 4",
+  "short_name": "OD 4",
+  "description": "Privát közös jegyzetek és heti tervező",
+  "lang": "hu",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0D0D0D",
+  "theme_color": "#0D0D0D",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#0D0D0D" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <meta name="referrer" content="no-referrer" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.open-meteo.com; img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; worker-src 'self'" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css?v=4.0.1" />
+  <title>OD Jegyzetek 4</title>
+</head>
+<body>
+  <section id="loadingView" class="gateView" aria-live="polite">
+    <div class="gateCard compactCard">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Betöltés…</p>
+    </div>
+  </section>
+
+  <section id="authView" class="gateView hidden">
+    <form id="authForm" class="gateCard">
+      <div class="authMark" aria-hidden="true">OD</div>
+      <h1>OD Jegyzetek</h1>
+      <p class="gateIntro">Privát közös jegyzetek és heti tervező.</p>
+      <label class="field" for="emailInput">
+        <span>E-mail-cím</span>
+        <input id="emailInput" type="email" inputmode="email" autocomplete="email" required placeholder="nev@email.hu" />
+      </label>
+      <button id="loginButton" type="submit" class="primaryBtn wideBtn">Belépési link kérése</button>
+      <p id="authMessage" class="formMessage" aria-live="polite"></p>
+      <button id="previewButton" type="button" class="chipBtn wideBtn previewBtn hidden">Belépés Preview módba</button>
+      <p class="privacyNote">Csak előre meghívott felhasználók léphetnek be.</p>
+    </form>
+  </section>
+
+  <section id="noAccessView" class="gateView hidden">
+    <div class="gateCard">
+      <h1>Nincs hozzáférés</h1>
+      <p class="gateIntro">A belépés sikerült, de ez a fiók még nem tagja a közös munkaterületnek.</p>
+      <button id="noAccessLogout" type="button" class="chipBtn wideBtn">Kijelentkezés</button>
+    </div>
+  </section>
+
+  <div id="appShell" class="hidden">
+    <header class="appHeader">
+      <div class="titleRow">
+        <div>
+          <h1 id="appTitle">OD Jegyzetek</h1>
+          <div id="workspaceName" class="workspaceName"></div>
+        </div>
+        <button id="logoutButton" type="button" class="iconBtn logoutBtn" aria-label="Kijelentkezés" title="Kijelentkezés">↪</button>
+      </div>
+      <div class="statusRow" aria-live="polite">
+        <span id="syncStatus" class="syncStatus">Kapcsolódás…</span>
+        <span id="userEmail" class="userEmail"></span>
+      </div>
+      <div class="topRow">
+        <select id="categorySelect" aria-label="Kategória"></select>
+        <button id="newCategory" type="button" class="plusBtn" aria-label="Új kategória">+</button>
+      </div>
+      <div class="actionRow actionRow3" id="checklistActions">
+        <button id="editCategory" type="button" class="chipBtn" aria-label="Kategória átnevezése">Átnevezés</button>
+        <button id="deleteCategory" type="button" class="chipBtn danger" aria-label="Kategória törlése">Törlés</button>
+        <button id="clearChecked" type="button" class="chipBtn" aria-label="Kipipáltak törlése">Készek törlése</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="checklistView">
+        <form id="itemForm" class="addRow">
+          <input id="itemInput" placeholder="Új tétel" autocomplete="off" maxlength="500" />
+          <button type="submit" class="primaryBtn" id="addBtn">Hozzáadás</button>
+        </form>
+        <ul id="list"></ul>
+      </section>
+      <section id="plannerView" class="hidden">
+        <div class="plannerTopBar">
+          <button id="plannerPrev" type="button" class="weekBtn" aria-label="Múlt hét">&lt;&lt;&lt;</button>
+          <div class="rangeBlock">
+            <div id="plannerRange" class="rangeText">--</div>
+            <div id="plannerLabel" class="rangeLabel">Ez a hét</div>
+            <button id="plannerToday" type="button" class="todayBtn">Ma</button>
+          </div>
+          <button id="plannerNext" type="button" class="weekBtn" aria-label="Jövő hét">&gt;&gt;&gt;</button>
+        </div>
+        <div id="plannerDays" class="plannerDays"></div>
+      </section>
+    </main>
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  </div>
+
+  <div id="modalOverlay" class="modalOverlay hidden" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modalHeader">
+        <h2 id="modalTitle">Kategória</h2>
+        <button id="modalClose" type="button" class="iconBtn" aria-label="Bezár">✕</button>
+      </div>
+      <div class="modalBody">
+        <label class="field">
+          <span>Név</span>
+          <input id="modalName" type="text" placeholder="pl. Ovi, Azúr" maxlength="80" />
+        </label>
+      </div>
+      <div class="modalFooter">
+        <button id="modalCancel" type="button" class="chipBtn">Mégse</button>
+        <button id="modalSave" type="button" class="primaryBtn">Mentés</button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="app.js?v=4.0.2"></script>
+</body>
+</html>
