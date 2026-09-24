@@ -102,6 +102,8 @@ function setAuthStep(step, email = "") {
   loginButton.textContent = enteringCode ? "Belépés" : "Belépési e-mail kérése";
   if (enteringCode) {
     emailInput.value = email;
+    credentialInput.inputMode = email ? "numeric" : "text";
+    credentialInput.placeholder = email ? "6 jegyű kód" : "Kód vagy https://…";
     if (email) localStorage.setItem(PENDING_EMAIL_KEY, email);
     else localStorage.removeItem(PENDING_EMAIL_KEY);
     credentialInput.value = "";
@@ -811,7 +813,7 @@ authForm.addEventListener("submit", async (event) => {
     const tokenHash = token ? null : extractTokenHash(credential);
     if (!token && !tokenHash) {
       loginButton.disabled = false;
-      authMessage.textContent = "Illeszd be a teljes Sign in linket a levélből.";
+      authMessage.textContent = "Írd be a levélben kapott 6 jegyű kódot, vagy illeszd be a teljes belépési linket.";
       credentialInput.select();
       return;
     }
@@ -843,7 +845,7 @@ authForm.addEventListener("submit", async (event) => {
     authMessage.textContent = emailSendError(error);
   } else {
     setAuthStep("code", email);
-    authMessage.textContent = "A levélben tartsd nyomva a Sign in gombot, válaszd a Link másolása lehetőséget, majd illeszd be ide. Ha számos kódot kapsz, azt is beírhatod.";
+    authMessage.textContent = "Elküldtük a 6 jegyű belépési kódot. Írd be ide a levélből.";
   }
 });
 
@@ -854,7 +856,7 @@ changeEmailButton.addEventListener("click", () => {
 
 haveLinkButton.addEventListener("click", () => {
   setAuthStep("code");
-  authMessage.textContent = "Illeszd be a levél Sign in gombjáról kimásolt teljes linket. A linket ne nyisd meg előtte Safariban.";
+  authMessage.textContent = "Írd be a kapott kódot. Régebbi levélnél a teljes belépési linket is beillesztheted.";
 });
 
 async function enterPreview() {
