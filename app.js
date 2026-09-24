@@ -21,6 +21,7 @@ const emailInput = $("emailInput");
 const credentialField = $("credentialField");
 const credentialInput = $("credentialInput");
 const loginButton = $("loginButton");
+const haveLinkButton = $("haveLinkButton");
 const changeEmailButton = $("changeEmailButton");
 const previewButton = $("previewButton");
 const authMessage = $("authMessage");
@@ -94,13 +95,15 @@ function setAuthStep(step, email = "") {
   const enteringCode = step === "code";
   emailField.classList.toggle("hidden", enteringCode);
   credentialField.classList.toggle("hidden", !enteringCode);
+  haveLinkButton.classList.toggle("hidden", enteringCode);
   changeEmailButton.classList.toggle("hidden", !enteringCode);
   emailInput.required = !enteringCode;
   credentialInput.required = enteringCode;
   loginButton.textContent = enteringCode ? "Belépés" : "Belépési e-mail kérése";
   if (enteringCode) {
     emailInput.value = email;
-    localStorage.setItem(PENDING_EMAIL_KEY, email);
+    if (email) localStorage.setItem(PENDING_EMAIL_KEY, email);
+    else localStorage.removeItem(PENDING_EMAIL_KEY);
     credentialInput.value = "";
     credentialInput.focus();
   } else {
@@ -799,6 +802,11 @@ authForm.addEventListener("submit", async (event) => {
       credentialInput.select();
       return;
     }
+    if (token && !email) {
+      loginButton.disabled = false;
+      authMessage.textContent = "Számsoros kódhoz előbb kérj belépési e-mailt az e-mail-címeddel.";
+      return;
+    }
     const { error } = token
       ? await supabase.auth.verifyOtp({ email, token, type: "email" })
       : await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "email" });
@@ -829,6 +837,11 @@ authForm.addEventListener("submit", async (event) => {
 changeEmailButton.addEventListener("click", () => {
   authMessage.textContent = "";
   setAuthStep("email");
+});
+
+haveLinkButton.addEventListener("click", () => {
+  setAuthStep("code");
+  authMessage.textContent = "Illeszd be a levél Sign in gombjáról kimásolt teljes linket. A linket ne nyisd meg előtte Safariban.";
 });
 
 async function enterPreview() {

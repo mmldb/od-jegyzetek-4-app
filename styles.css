@@ -36,8 +36,11 @@ body:has(.gateView:not(.hidden)) {
   padding: 0;
 }
 
-/* iOS zoom prevention */
-input, button, textarea, select { font-size: 16px; }
+/* iOS zoom prevention and consistent typography in form controls/lists */
+input, button, textarea, select {
+  font-family: inherit;
+  font-size: 16px;
+}
 
 .hidden { display: none !important; }
 
@@ -200,8 +203,9 @@ li:active { cursor: grabbing; }
 }
 
 .itemText {
+  font-family: inherit;
   font-size: 18px;
-  font-weight: 750;
+  font-weight: 800;
   color: rgba(0,0,0,.86);
   letter-spacing: .1px;
 }
