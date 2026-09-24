@@ -165,6 +165,19 @@ function friendlyError(error) {
   return "Nem sikerült a művelet. Próbáld meg újra.";
 }
 
+function emailSendError(error) {
+  if (error?.code === "over_email_send_rate_limit") {
+    return "Elérted a Supabase óránkénti 2 belépési e-mailes korlátját. Várj egy órát az utolsó sikeres levéltől, majd próbáld újra.";
+  }
+  if (error?.code === "email_address_not_authorized") {
+    return "A Supabase alaplevelezője erre a címre nem küldhet. Egyedi SMTP-beállítás szükséges.";
+  }
+  if (error?.code === "over_request_rate_limit") {
+    return "Túl sok belépési próbálkozás történt. Várj néhány percet, majd próbáld újra.";
+  }
+  return "Nem sikerült e-mailt küldeni. Próbáld meg később.";
+}
+
 function esc(value) {
   return (value ?? "").toString()
     .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
@@ -827,7 +840,7 @@ authForm.addEventListener("submit", async (event) => {
   });
   loginButton.disabled = false;
   if (error) {
-    authMessage.textContent = "Nem sikerült e-mailt küldeni. Ellenőrizd az e-mail-címet.";
+    authMessage.textContent = emailSendError(error);
   } else {
     setAuthStep("code", email);
     authMessage.textContent = "A levélben tartsd nyomva a Sign in gombot, válaszd a Link másolása lehetőséget, majd illeszd be ide. Ha számos kódot kapsz, azt is beírhatod.";
