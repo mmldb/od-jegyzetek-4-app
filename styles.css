@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark;
   /* Your palette */
   --bg: #0D0D0D;
 
@@ -58,6 +59,14 @@ input, button, textarea, select {
   margin-bottom: 10px;
 }
 
+#appShell {
+  min-height: calc(100dvh - 28px);
+  display: flex;
+  flex-direction: column;
+}
+
+#appShell > main { flex: 1 0 auto; }
+
 .titleRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 h1 {
   margin: 0;
@@ -81,7 +90,13 @@ select {
   border-radius: var(--radius);
   border: 1px solid rgba(255,255,255,.12);
   outline: none;
-  background: rgba(255,255,255,.06);
+  background: #1b1b1b;
+  color: rgba(255,255,255,.92);
+  color-scheme: dark;
+}
+
+select option {
+  background: #1b1b1b;
   color: rgba(255,255,255,.92);
 }
 
@@ -541,14 +556,33 @@ select:focus {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .workspaceName {
-  margin-top: 3px;
   color: var(--muted);
   font-size: 12px;
 }
 
 .logoutBtn {
   flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  line-height: 1;
   font-size: 20px;
+}
+
+.appFooter {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.footerWorkspaceRow {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .statusRow {
