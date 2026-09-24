@@ -16,8 +16,12 @@ const authView = $("authView");
 const noAccessView = $("noAccessView");
 const appShell = $("appShell");
 const authForm = $("authForm");
+const emailField = $("emailField");
 const emailInput = $("emailInput");
+const credentialField = $("credentialField");
+const credentialInput = $("credentialInput");
 const loginButton = $("loginButton");
+const changeEmailButton = $("changeEmailButton");
 const previewButton = $("previewButton");
 const authMessage = $("authMessage");
 const logoutButton = $("logoutButton");
@@ -84,6 +88,51 @@ const previewStore = {
 let modalMode = "new";
 let toastTimer = null;
 let sessionRevision = 0;
+const PENDING_EMAIL_KEY = "od4-pending-email";
+
+function setAuthStep(step, email = "") {
+  const enteringCode = step === "code";
+  emailField.classList.toggle("hidden", enteringCode);
+  credentialField.classList.toggle("hidden", !enteringCode);
+  changeEmailButton.classList.toggle("hidden", !enteringCode);
+  emailInput.required = !enteringCode;
+  credentialInput.required = enteringCode;
+  loginButton.textContent = enteringCode ? "Belépés" : "Belépési e-mail kérése";
+  if (enteringCode) {
+    emailInput.value = email;
+    localStorage.setItem(PENDING_EMAIL_KEY, email);
+    credentialInput.value = "";
+    credentialInput.focus();
+  } else {
+    localStorage.removeItem(PENDING_EMAIL_KEY);
+    credentialInput.value = "";
+    emailInput.focus();
+  }
+}
+
+function extractTokenHash(value) {
+  let candidate = value.trim();
+  for (let depth = 0; depth < 3; depth += 1) {
+    let url;
+    try {
+      url = new URL(candidate);
+    } catch {
+      return null;
+    }
+    const tokenHash = url.searchParams.get("token_hash") ?? url.searchParams.get("token");
+    if (tokenHash) return tokenHash;
+    const nested = [...url.searchParams.values()].find((part) => {
+      try {
+        return /^https?:\/\//i.test(decodeURIComponent(part));
+      } catch {
+        return false;
+      }
+    });
+    if (!nested) return null;
+    candidate = decodeURIComponent(nested);
+  }
+  return null;
+}
 
 function showView(view) {
   [loadingView, authView, noAccessView, appShell].forEach((element) => {
@@ -678,9 +727,12 @@ async function applySession(session) {
   if (!session?.user) {
     clearPrivateState();
     showView(authView);
-    emailInput.focus();
+    const pendingEmail = localStorage.getItem(PENDING_EMAIL_KEY);
+    if (pendingEmail) setAuthStep("code", pendingEmail);
+    else setAuthStep("email");
     return;
   }
+  localStorage.removeItem(PENDING_EMAIL_KEY);
   if (state.user?.id === session.user.id && state.workspaceId) return;
   showView(loadingView);
   state.user = session.user;
@@ -735,16 +787,48 @@ authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!supabase) return;
   loginButton.disabled = true;
-  authMessage.textContent = "Belépési link küldése…";
-  const redirectTo = window.location.origin + window.location.pathname;
+  const email = emailInput.value.trim().toLowerCase();
+  if (!credentialField.classList.contains("hidden")) {
+    authMessage.textContent = "Belépés ellenőrzése…";
+    const credential = credentialInput.value.trim();
+    const token = /^\d{6,8}$/.test(credential) ? credential : null;
+    const tokenHash = token ? null : extractTokenHash(credential);
+    if (!token && !tokenHash) {
+      loginButton.disabled = false;
+      authMessage.textContent = "Illeszd be a teljes Sign in linket a levélből.";
+      credentialInput.select();
+      return;
+    }
+    const { error } = token
+      ? await supabase.auth.verifyOtp({ email, token, type: "email" })
+      : await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "email" });
+    loginButton.disabled = false;
+    if (error) {
+      authMessage.textContent = "A kód vagy link hibás, lejárt, esetleg már felhasználták. Kérj új e-mailt.";
+      credentialInput.select();
+    } else {
+      localStorage.removeItem(PENDING_EMAIL_KEY);
+      authMessage.textContent = "Sikeres belépés…";
+    }
+    return;
+  }
+  authMessage.textContent = "Belépési e-mail küldése…";
   const { error } = await supabase.auth.signInWithOtp({
-    email: emailInput.value.trim(),
-    options: { emailRedirectTo: redirectTo, shouldCreateUser: false },
+    email,
+    options: { shouldCreateUser: false },
   });
   loginButton.disabled = false;
-  authMessage.textContent = error
-    ? "Nem sikerült linket küldeni. Ellenőrizd az e-mail-címet."
-    : "Elküldtük a belépési linket. Nézd meg a leveleidet.";
+  if (error) {
+    authMessage.textContent = "Nem sikerült e-mailt küldeni. Ellenőrizd az e-mail-címet.";
+  } else {
+    setAuthStep("code", email);
+    authMessage.textContent = "A levélben tartsd nyomva a Sign in gombot, válaszd a Link másolása lehetőséget, majd illeszd be ide. Ha számos kódot kapsz, azt is beírhatod.";
+  }
+});
+
+changeEmailButton.addEventListener("click", () => {
+  authMessage.textContent = "";
+  setAuthStep("email");
 });
 
 async function enterPreview() {
