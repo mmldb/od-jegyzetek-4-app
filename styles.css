@@ -30,14 +30,14 @@ body {
   padding: 14px;
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 body:has(.gateView:not(.hidden)) {
   padding: 0;
 }
 
-/* iOS zoom prevention and consistent typography in form controls/lists */
+/* Keep the original journal's monospaced typography everywhere. */
 input, button, textarea, select {
   font-family: inherit;
   font-size: 16px;
