@@ -43,7 +43,7 @@ function timeLabel(iso) {
 
 function authorName(email) {
   const normalized = String(email || "").toLowerCase();
-  if (normalized === "arpadi.tamas@gmail.com") return "Tamás";
+  if (normalized === "arpadi.tamas@gmail.com") return "Döbi";
   if (normalized === "info@vajdaorsolya.com") return "Orsi";
   return email || "Ismeretlen";
 }
@@ -221,7 +221,7 @@ export function createHealthFeature({ supabase, getContext, showToast, setSync, 
         <div class="healthEntryHead"><strong>${escapeHtml(entry.category_emoji || "•")} ${escapeHtml(entry.category_name)}</strong><span class="healthEntryTime">${escapeHtml(timeLabel(entry.occurred_at))}</span></div>
         ${entry.detail ? `<p>${escapeHtml(entry.detail)}</p>` : ""}
         ${entry.note ? `<p class="healthEntryMeta">${escapeHtml(entry.note)}</p>` : ""}
-        <div class="healthEntryHead"><p class="healthEntryMeta">Rögzítette: ${escapeHtml(entry.author_name)}</p><button type="button" class="healthEntryMenu" data-health-entry-menu="${escapeHtml(entry.id)}" aria-label="Bejegyzés műveletei">•••</button></div>
+        <div class="healthEntryHead"><p class="healthEntryMeta">Rögzítette: ${escapeHtml(entry.author_name === "Tamás" ? "Döbi" : entry.author_name)}</p><button type="button" class="healthEntryMenu" data-health-entry-menu="${escapeHtml(entry.id)}" aria-label="Bejegyzés műveletei">•••</button></div>
         <div class="healthEntryActions hidden" data-health-entry-actions="${escapeHtml(entry.id)}">
           <button type="button" data-health-edit-entry="${escapeHtml(entry.id)}">Szerkesztés</button>
           <button type="button" class="danger" data-health-delete-entry="${escapeHtml(entry.id)}">Törlés</button>

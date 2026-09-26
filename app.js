@@ -1,5 +1,5 @@
 import { isConfigured, supabase } from "./supabase.js";
-import { createHealthFeature } from "./health.js?v=4.1.0";
+import { createHealthFeature } from "./health.js?v=4.1.1";
 
 const $ = (id) => document.getElementById(id);
 const PLANNER_VALUE = "__planner__";
@@ -817,7 +817,7 @@ async function applySession(session) {
   state.workspaceId = data.workspace_id;
   state.workspaceRole = data.role;
   userEmail.textContent = session.user.email ?? "";
-  workspaceName.textContent = data.workspaces?.name ?? "Közös";
+  workspaceName.textContent = (data.workspaces?.name ?? "Közös").replaceAll("Tamás", "Döbi");
   const hour = new Date().getHours();
   $("appTitle").textContent = (hour < 12 ? "Jó reggelt!" : hour < 18 ? "Szia!" : "Jó estét!") + " OD Jegyzetek";
   categorySelect.value = PLANNER_VALUE;
