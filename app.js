@@ -1,5 +1,5 @@
 import { isConfigured, supabase } from "./supabase.js";
-import { createHealthFeature } from "./health.js?v=4.1.1";
+import { createHealthFeature } from "./health.js?v=4.1.2";
 
 const $ = (id) => document.getElementById(id);
 const PLANNER_VALUE = "__planner__";
@@ -274,6 +274,18 @@ function toISODate(date) {
   const month = String(value.getMonth() + 1).padStart(2, "0");
   const day = String(value.getDate()).padStart(2, "0");
   return year + "-" + month + "-" + day;
+}
+
+function footerDateLabel(date = new Date()) {
+  const weekdays = ["Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}.${month}.${day}. / ${weekdays[date.getDay()]}`;
+}
+
+function updateFooterDate() {
+  workspaceName.textContent = footerDateLabel();
 }
 
 function fmtRange(startDate) {
@@ -817,7 +829,7 @@ async function applySession(session) {
   state.workspaceId = data.workspace_id;
   state.workspaceRole = data.role;
   userEmail.textContent = session.user.email ?? "";
-  workspaceName.textContent = (data.workspaces?.name ?? "Közös").replaceAll("Tamás", "Döbi");
+  updateFooterDate();
   const hour = new Date().getHours();
   $("appTitle").textContent = (hour < 12 ? "Jó reggelt!" : hour < 18 ? "Szia!" : "Jó estét!") + " OD Jegyzetek";
   categorySelect.value = PLANNER_VALUE;
@@ -833,6 +845,7 @@ async function applySession(session) {
 }
 
 async function signOut() {
+  if (!confirm("Biztosan kijelentkezel?")) return;
   await flushPlannerSaves();
   if (state.preview) {
     clearPrivateState();
@@ -907,7 +920,7 @@ async function enterPreview() {
   state.workspaceId = "preview-workspace";
   state.workspaceRole = "owner";
   userEmail.textContent = "helyi mintaadatok";
-  workspaceName.textContent = "Preview munkaterület";
+  updateFooterDate();
   $("appTitle").textContent = "OD Jegyzetek Preview";
   categorySelect.value = PLANNER_VALUE;
   showView(appShell);
@@ -926,6 +939,7 @@ noAccessLogout.addEventListener("click", signOut);
 window.addEventListener("online", () => setSync("Újra online", "saved"));
 window.addEventListener("offline", () => setSync("Offline", "error"));
 document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && state.workspaceId) updateFooterDate();
   if (document.visibilityState === "hidden") flushPlannerSaves();
 });
 

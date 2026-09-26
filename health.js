@@ -200,12 +200,29 @@ export function createHealthFeature({ supabase, getContext, showToast, setSync, 
     return data;
   }
 
-  function renderCategories() {
-    categoryGrid.innerHTML = state.categories.map((category) => `
+  function categoriesByRecentUse() {
+    const latestUse = new Map();
+    state.entries
+      .filter((entry) => entry.child_name === state.child)
+      .forEach((entry) => {
+        const timestamp = new Date(entry.occurred_at).getTime();
+        latestUse.set(entry.category_id, Math.max(latestUse.get(entry.category_id) || 0, timestamp));
+      });
+    return [...state.categories].sort((left, right) =>
+      (latestUse.get(right.id) || 0) - (latestUse.get(left.id) || 0)
+      || (left.sort_order || 0) - (right.sort_order || 0));
+  }
+
+  function renderCategoryGrid() {
+    categoryGrid.innerHTML = categoriesByRecentUse().map((category) => `
       <button type="button" class="healthCategoryButton" data-health-category="${escapeHtml(category.id)}" aria-label="${escapeHtml(category.name)}${category.quick_save ? ", azonnali mentés" : ""}" title="${escapeHtml(category.name)}">
         <span aria-hidden="true">${escapeHtml(category.emoji || "＋")}</span>
         ${category.quick_save ? '<span class="healthQuickMark" aria-hidden="true">⚡</span>' : ""}
       </button>`).join("");
+  }
+
+  function renderCategories() {
+    renderCategoryGrid();
     categoryList.innerHTML = state.categories.map((category) => `
       <div class="healthCategoryRow">
         <span class="healthCategoryInfo"><strong>${escapeHtml(category.emoji)} ${escapeHtml(category.name)}</strong><small>${escapeHtml(KIND_LABELS[category.entry_type] || category.entry_type)}${category.quick_save ? " · ⚡ gyors mentés" : ""}</small></span>
@@ -214,6 +231,7 @@ export function createHealthFeature({ supabase, getContext, showToast, setSync, 
   }
 
   function renderTimeline() {
+    renderCategoryGrid();
     childLabel.textContent = state.child;
     const rows = state.entries.filter((entry) => entry.child_name === state.child);
     timeline.innerHTML = rows.length ? rows.map((entry) => `
