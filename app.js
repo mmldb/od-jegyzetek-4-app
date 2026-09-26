@@ -1,4 +1,5 @@
 import { isConfigured, supabase } from "./supabase.js";
+import { createHealthFeature } from "./health.js?v=4.1.0";
 
 const $ = (id) => document.getElementById(id);
 const PLANNER_VALUE = "__planner__";
@@ -31,6 +32,8 @@ const workspaceName = $("workspaceName");
 const userEmail = $("userEmail");
 const syncStatus = $("syncStatus");
 const toast = $("toast");
+const topRow = document.querySelector(".topRow");
+const healthButton = $("healthButton");
 const categorySelect = $("categorySelect");
 const newCategoryBtn = $("newCategory");
 const editCategoryBtn = $("editCategory");
@@ -48,6 +51,7 @@ const plannerToday = $("plannerToday");
 const plannerRange = $("plannerRange");
 const plannerLabel = $("plannerLabel");
 const plannerDays = $("plannerDays");
+const healthView = $("healthView");
 const modalOverlay = $("modalOverlay");
 const modalTitle = $("modalTitle");
 const modalName = $("modalName");
@@ -67,6 +71,7 @@ const state = {
   saveQueue: new Map(),
   saveTimers: new Map(),
   realtimeChannel: null,
+  healthActive: false,
 };
 
 const previewStore = {
@@ -90,6 +95,18 @@ let modalMode = "new";
 let toastTimer = null;
 let sessionRevision = 0;
 const PENDING_EMAIL_KEY = "od4-pending-email";
+
+const healthFeature = createHealthFeature({
+  supabase,
+  getContext: () => ({
+    preview: state.preview,
+    workspaceId: state.workspaceId,
+    user: state.user,
+  }),
+  showToast,
+  setSync,
+  onExit: exitHealth,
+});
 
 function setAuthStep(step, email = "") {
   const enteringCode = step === "code";
@@ -209,9 +226,32 @@ function isPlannerSelected() {
 }
 
 function setViewPlanner(on) {
+  state.healthActive = false;
+  topRow.classList.remove("hidden");
+  healthView.classList.add("hidden");
   checklistView.classList.toggle("hidden", on);
   checklistActions.classList.toggle("hidden", on);
   plannerView.classList.toggle("hidden", !on);
+}
+
+async function enterHealth() {
+  await flushPlannerSaves();
+  state.healthActive = true;
+  checklistView.classList.add("hidden");
+  plannerView.classList.add("hidden");
+  checklistActions.classList.add("hidden");
+  topRow.classList.add("hidden");
+  await healthFeature.activate();
+}
+
+async function exitHealth() {
+  healthFeature.deactivate();
+  state.healthActive = false;
+  topRow.classList.remove("hidden");
+  categorySelect.value = PLANNER_VALUE;
+  state.activeCategoryId = null;
+  setViewPlanner(true);
+  await renderPlanner();
 }
 
 function startOfWeek(date) {
@@ -720,6 +760,7 @@ function setupRealtime() {
 }
 
 function clearPrivateState() {
+  healthFeature.deactivate();
   stopRealtime();
   state.user = null;
   state.preview = false;
@@ -728,6 +769,7 @@ function clearPrivateState() {
   state.categories = [];
   state.todos = [];
   state.activeCategoryId = null;
+  state.healthActive = false;
   state.saveQueue.clear();
   state.saveTimers.forEach(clearTimeout);
   state.saveTimers.clear();
@@ -875,6 +917,10 @@ async function enterPreview() {
 
 previewButton.addEventListener("click", enterPreview);
 
+healthButton.addEventListener("click", () => {
+  enterHealth().catch((error) => showToast(friendlyError(error)));
+});
+
 logoutButton.addEventListener("click", signOut);
 noAccessLogout.addEventListener("click", signOut);
 window.addEventListener("online", () => setSync("Újra online", "saved"));
@@ -1007,6 +1053,7 @@ async function init() {
   previewButton.classList.toggle("hidden", !localPreviewAllowed);
   if (localPreviewAllowed && new URLSearchParams(window.location.search).get("preview") === "1") {
     await enterPreview();
+    if (new URLSearchParams(window.location.search).get("health") === "1") await enterHealth();
     return;
   }
   if (!isConfigured) {

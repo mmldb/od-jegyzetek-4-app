@@ -78,13 +78,14 @@ h1 {
 
 .topRow {
   display: grid;
-  grid-template-columns: 1fr 56px;
+  grid-template-columns: 56px 1fr 56px;
   gap: 8px;
   align-items: center;
 }
 
 select {
   width: 100%;
+  min-width: 0;
   height: var(--controlH);
   padding: 0 12px;
   border-radius: var(--radius);
@@ -131,6 +132,8 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   line-height: 1;
   font-weight: 900;
 }
+
+.healthBtn { font-size: 20px; }
 
 .wideBtn { width: 100%; }
 
@@ -650,4 +653,129 @@ select:focus {
   font-size: 14px;
   transition: opacity 0.2s ease;
   text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Health journal */
+.healthView { display: grid; gap: 14px; }
+.healthHeader,
+.healthSectionHead,
+.healthEntryHead,
+.healthFeedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.healthHeader h2,
+.healthSectionHead h3 { margin: 0; }
+.healthHeader h2 { font-size: 18px; font-weight: 850; }
+.healthBack { width: auto; padding: 0 14px; }
+.healthChildren,
+.healthTabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.healthChild,
+.healthTab { min-height: 42px; }
+.healthChild[aria-pressed="true"],
+.healthTab[aria-selected="true"] {
+  color: #101010;
+  background: var(--p-blueL);
+  border-color: transparent;
+}
+.healthPanel { display: grid; gap: 12px; }
+.healthSectionHead span { color: var(--muted); font-size: 12px; }
+.healthSectionHead h3 { font-size: 16px; font-weight: 850; }
+.healthCategoryGrid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(2, 64px);
+  grid-auto-columns: calc((100% - 24px) / 4);
+  gap: 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  scrollbar-width: thin;
+  padding-bottom: 5px;
+}
+.healthCategoryButton {
+  position: relative;
+  min-width: 0;
+  min-height: 64px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+}
+.healthQuickMark {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  color: var(--p-yellow);
+  font-size: 12px;
+}
+.healthFeedback {
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.08);
+  font-size: 14px;
+}
+.healthFeedbackActions { display: flex; gap: 6px; }
+.healthFeedback .chipBtn { height: 38px; padding: 0 10px; font-size: 13px; }
+.healthTimeline { display: grid; gap: 8px; }
+.healthEntry {
+  padding: 12px;
+  border-left: 4px solid var(--p-green);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.06);
+}
+.healthEntry p { margin: 5px 0 0; }
+.healthEntryTime,
+.healthEntryMeta,
+.healthEmpty { color: var(--muted); font-size: 12px; }
+.healthEntryMenu { min-width: 44px; min-height: 38px; }
+.healthEntryActions { display: flex; gap: 8px; margin-top: 10px; }
+.healthEntryActions button { flex: 1; min-height: 38px; }
+.healthEntryActions .danger { color: var(--p-pink); }
+.healthEmpty { padding: 20px 0; text-align: center; }
+.healthCategoryList { display: grid; }
+.healthCategoryRow {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,.10);
+}
+.healthCategoryRow button { min-height: 38px; padding: 0 12px; }
+.healthCategoryInfo { display: grid; gap: 3px; }
+.healthCategoryInfo small { color: var(--muted); }
+.healthEmojiName { display: grid; grid-template-columns: 82px 1fr; gap: 8px; }
+.healthEmojiInput { text-align: center; font-size: 24px !important; }
+.healthQuickCheck { display: flex; align-items: flex-start; gap: 10px; }
+.healthQuickCheck input { width: 24px; height: 24px; margin: 0; accent-color: var(--p-blueL); }
+.healthQuickCheck span { display: grid; gap: 4px; }
+.healthQuickCheck small { color: var(--muted); line-height: 1.35; }
+.healthFieldRow { display: grid; grid-template-columns: 1fr 110px; gap: 8px; }
+.healthFieldInput,
+#healthCategoryEmoji,
+#healthCategoryName,
+#healthCategoryUnit,
+#healthCategoryOptions {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,.12);
+  outline: none;
+  color: var(--text);
+  background: rgba(255,255,255,.06);
+}
+textarea.healthFieldInput { min-height: 76px; resize: vertical; }
+
+@media (max-width: 370px) {
+  .healthCategoryGrid { grid-auto-columns: calc((100% - 18px) / 4); gap: 6px; }
+  .healthHeader { align-items: flex-start; }
 }

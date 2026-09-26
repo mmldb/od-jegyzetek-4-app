@@ -9,7 +9,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.open-meteo.com; img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; worker-src 'self'" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=4.0.8" />
+  <link rel="stylesheet" href="styles.css?v=4.1.0" />
   <title>OD Jegyzetek 4</title>
 </head>
 <body>
@@ -38,7 +38,7 @@
       <button id="changeEmailButton" type="button" class="chipBtn wideBtn hidden">Másik e-mail-cím</button>
       <p id="authMessage" class="formMessage" aria-live="polite"></p>
       <button id="previewButton" type="button" class="chipBtn wideBtn previewBtn hidden">Belépés Preview módba</button>
-      <p class="privacyNote">Csak előre meghívott felhasználók léphetnek be. · v4.0.8</p>
+      <p class="privacyNote">Csak előre meghívott felhasználók léphetnek be. · v4.1.0</p>
     </form>
   </section>
 
@@ -56,6 +56,7 @@
         <h1 id="appTitle">OD Jegyzetek</h1>
       </div>
       <div class="topRow">
+        <button id="healthButton" type="button" class="plusBtn healthBtn" aria-label="Egészségnapló" title="Egészségnapló">💊</button>
         <select id="categorySelect" aria-label="Kategória"></select>
         <button id="newCategory" type="button" class="plusBtn" aria-label="Új kategória">+</button>
       </div>
@@ -85,6 +86,42 @@
           <button id="plannerNext" type="button" class="weekBtn" aria-label="Jövő hét">&gt;&gt;&gt;</button>
         </div>
         <div id="plannerDays" class="plannerDays"></div>
+      </section>
+      <section id="healthView" class="healthView hidden" aria-label="Egészségnapló">
+        <div class="healthHeader">
+          <button id="healthBack" type="button" class="chipBtn healthBack">← Tervező</button>
+          <h2>Egészségnapló</h2>
+        </div>
+        <div class="healthChildren" role="group" aria-label="Gyerek kiválasztása">
+          <button type="button" class="healthChild" data-health-child="Marci" aria-pressed="true">Marci</button>
+          <button type="button" class="healthChild" data-health-child="Misi" aria-pressed="false">Misi</button>
+        </div>
+        <div class="healthTabs" role="tablist" aria-label="Egészségnapló nézete">
+          <button type="button" class="healthTab" data-health-tab="log" role="tab" aria-selected="true">Napló</button>
+          <button type="button" class="healthTab" data-health-tab="categories" role="tab" aria-selected="false">Kategóriák</button>
+        </div>
+
+        <section id="healthLogPanel" class="healthPanel">
+          <div class="healthSectionHead"><h3>Új esemény</h3><span id="healthChildLabel">Marci</span></div>
+          <div id="healthCategoryGrid" class="healthCategoryGrid"></div>
+          <div id="healthFeedback" class="healthFeedback hidden" aria-live="polite">
+            <span id="healthFeedbackText"></span>
+            <span class="healthFeedbackActions">
+              <button id="healthDetails" type="button" class="chipBtn hidden">Részletek</button>
+              <button id="healthUndo" type="button" class="chipBtn">Visszavonás</button>
+            </span>
+          </div>
+          <div class="healthSectionHead"><h3>Idővonal</h3><span>legújabb elöl</span></div>
+          <div id="healthTimeline" class="healthTimeline" aria-live="polite"></div>
+        </section>
+
+        <section id="healthCategoriesPanel" class="healthPanel hidden">
+          <div class="healthSectionHead">
+            <h3>Kategóriák</h3>
+            <button id="healthNewCategory" type="button" class="chipBtn">＋ Új</button>
+          </div>
+          <div id="healthCategoryList" class="healthCategoryList"></div>
+        </section>
       </section>
     </main>
     <footer class="appFooter">
@@ -118,6 +155,61 @@
       </div>
     </div>
   </div>
-  <script type="module" src="app.js?v=4.0.8"></script>
+
+  <div id="healthEntryOverlay" class="modalOverlay hidden" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="healthEntryTitle">
+      <div class="modalHeader">
+        <h2 id="healthEntryTitle">Esemény</h2>
+        <button id="healthEntryClose" type="button" class="iconBtn" aria-label="Bezár">✕</button>
+      </div>
+      <form id="healthEntryForm">
+        <div id="healthEntryFields" class="modalBody"></div>
+        <div class="modalFooter">
+          <button id="healthEntryCancel" type="button" class="chipBtn">Mégse</button>
+          <button id="healthEntrySave" type="submit" class="primaryBtn">Mentés</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="healthCategoryOverlay" class="modalOverlay hidden" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="healthCategoryTitle">
+      <div class="modalHeader">
+        <h2 id="healthCategoryTitle">Kategória</h2>
+        <button id="healthCategoryClose" type="button" class="iconBtn" aria-label="Bezár">✕</button>
+      </div>
+      <form id="healthCategoryForm">
+        <div class="modalBody">
+          <div class="healthEmojiName">
+            <label class="field"><span>Emoji</span><input id="healthCategoryEmoji" class="healthEmojiInput" maxlength="8" required placeholder="💊" /></label>
+            <label class="field"><span>Név</span><input id="healthCategoryName" maxlength="80" required placeholder="pl. Orrszívás" /></label>
+          </div>
+          <label class="field"><span>Adattípus</span>
+            <select id="healthCategoryKind">
+              <option value="medicine">Gyógyszer (név + adag)</option>
+              <option value="temperature">Lázmérés (°C + hely)</option>
+              <option value="stool">Kaki (állag + mennyiség)</option>
+              <option value="event">Csak esemény</option>
+              <option value="number">Szám és mértékegység</option>
+              <option value="duration">Időtartam</option>
+              <option value="choice">Választható állapot</option>
+              <option value="text">Szabad szöveg</option>
+            </select>
+          </label>
+          <label id="healthCategoryUnitField" class="field hidden"><span>Mértékegység</span><input id="healthCategoryUnit" placeholder="pl. ml" /></label>
+          <label id="healthCategoryOptionsField" class="field hidden"><span>Lehetőségek vesszővel elválasztva</span><input id="healthCategoryOptions" placeholder="pl. enyhe, közepes, erős" /></label>
+          <label class="healthQuickCheck">
+            <input id="healthCategoryQuick" type="checkbox" />
+            <span><strong>Egy érintésre mentés</strong><small>A kategória megnyomása azonnal naplóz, részletező nélkül.</small></span>
+          </label>
+        </div>
+        <div class="modalFooter">
+          <button id="healthCategoryCancel" type="button" class="chipBtn">Mégse</button>
+          <button type="submit" class="primaryBtn">Mentés</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script type="module" src="app.js?v=4.1.0"></script>
 </body>
 </html>
