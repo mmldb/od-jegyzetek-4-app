@@ -1,5 +1,5 @@
 import { isConfigured, supabase } from "./supabase.js";
-import { createHealthFeature } from "./health.js?v=4.1.2";
+import { createHealthFeature } from "./health.js?v=4.1.3";
 
 const $ = (id) => document.getElementById(id);
 const PLANNER_VALUE = "__planner__";
@@ -623,6 +623,10 @@ function attachSwipe(element, onSwipeLeft) {
     element.classList.add("swipe-transition");
     element.style.transform = "translateX(0)";
     element.style.opacity = "1";
+    if (Math.abs(currentX - startX) > 10) {
+      element.dataset.ignoreTap = "true";
+      setTimeout(() => delete element.dataset.ignoreTap, 0);
+    }
     if (currentX - startX < -80) onSwipeLeft();
   };
   element.addEventListener("pointerup", finish);
@@ -668,6 +672,10 @@ function renderTodos() {
         item.classList.remove("removing");
         showToast(friendlyError(error));
       }
+    });
+    item.addEventListener("click", (event) => {
+      if (event.target.closest("button,input") || item.dataset.ignoreTap === "true") return;
+      moveTodoToTop(todo.id).catch((error) => showToast(friendlyError(error)));
     });
     attachSwipe(item, () => moveTodoToTop(todo.id).catch((error) => showToast(friendlyError(error))));
     fragment.appendChild(item);

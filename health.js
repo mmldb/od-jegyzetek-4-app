@@ -36,9 +36,18 @@ function localInputValue(date = new Date()) {
 
 function timeLabel(iso) {
   const date = new Date(iso);
-  const sameDay = date.toDateString() === new Date().toDateString();
-  const day = sameDay ? "ma" : date.toLocaleDateString("hu-HU", { month: "short", day: "numeric" });
-  return day + " " + date.toLocaleTimeString("hu-HU", { hour: "2-digit", minute: "2-digit" });
+  const today = new Date();
+  const eventDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const difference = Math.round((todayDay - eventDay) / 86400000);
+  const relative = difference === 0 ? "ma"
+    : difference === 1 ? "tegnap"
+      : difference > 1 ? `${difference} napja`
+        : difference === -1 ? "holnap"
+          : `${Math.abs(difference)} nap múlva`;
+  const calendar = `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}.`;
+  const time = date.toLocaleTimeString("hu-HU", { hour: "2-digit", minute: "2-digit" });
+  return `${calendar} ${time} · ${relative}`;
 }
 
 function authorName(email) {
