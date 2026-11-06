@@ -349,19 +349,18 @@ li:active { cursor: grabbing; }
   line-height: 1;
 }
 
-/* Busy mark: a thin dashed line just inside the card's left edge, nothing when free.
-   Inset so the card colour frames it against the black page. Swipe a day right to toggle. */
+/* Busy mark: a dashed 4px strip along the card's left edge, nothing when free.
+   Swipe a day right to toggle. */
 .dayCard { touch-action: pan-y; translate: 0 0; transition: filter 0.3s ease, translate 0.2s ease; }
 .plannerDays .dayCard.swiping { transition: none !important; }
 
 .dayCard[data-booking="booked"]::before {
   content: "";
   position: absolute;
-  left: 6px;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  border-radius: 2px;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
   background: repeating-linear-gradient(180deg, rgba(0,0,0,0.75) 0 5px, transparent 5px 9px);
   pointer-events: none;
 }
