@@ -349,13 +349,11 @@ li:active { cursor: grabbing; }
   line-height: 1;
 }
 
-/* Booking indicator: a thin line just inside the card's left edge, nothing when free.
-   Inset so the card colour frames it; at the very edge a solid black line would
-   merge with the black page background. Dashed = pencil, solid = booked. Tap the date to cycle. */
-.dayLeft { cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; }
-.dayLeft:focus-visible { outline: 2px solid rgba(0,0,0,.45); outline-offset: -4px; border-radius: 8px; }
+/* Busy mark: a thin dashed line just inside the card's left edge, nothing when free.
+   Inset so the card colour frames it against the black page. Swipe a day right to toggle. */
+.dayCard { touch-action: pan-y; translate: 0 0; transition: filter 0.3s ease, translate 0.2s ease; }
+.plannerDays .dayCard.swiping { transition: none !important; }
 
-.dayCard[data-booking="pencil"]::before,
 .dayCard[data-booking="booked"]::before {
   content: "";
   position: absolute;
@@ -364,12 +362,9 @@ li:active { cursor: grabbing; }
   bottom: 10px;
   width: 3px;
   border-radius: 2px;
+  background: repeating-linear-gradient(180deg, rgba(0,0,0,0.75) 0 5px, transparent 5px 9px);
   pointer-events: none;
 }
-.dayCard[data-booking="pencil"]::before {
-  background: repeating-linear-gradient(180deg, rgba(0,0,0,0.75) 0 5px, transparent 5px 9px);
-}
-.dayCard[data-booking="booked"]::before { background: rgba(0,0,0,0.8); }
 
 .dayRight {
   height: 100%;

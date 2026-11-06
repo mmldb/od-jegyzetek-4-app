@@ -76,9 +76,8 @@ const state = {
   plannerStale: false,
 };
 
-// Tapping the date cycles: free -> pencil -> booked -> free.
-const BOOKING_NEXT = { "": "pencil", pencil: "booked", booked: "" };
-const BOOKING_LABELS = { "": "szabad", pencil: "pencil (opció)", booked: "booked (lekötve)" };
+// Swiping a planner day to the right toggles the "busy" mark.
+const BOOKING_SWIPE_PX = 60;
 
 const previewStore = {
   categories: [
@@ -585,46 +584,73 @@ async function savePlannerBooking(day, booking) {
   if (state.saveQueue.size === 0) setSync("Mentve", "saved");
 }
 
-function renderBooking(card, dateLabel, booking) {
-  card.dataset.booking = booking ?? "";
-  card.querySelector(".dayLeft").setAttribute(
-    "aria-label", dateLabel + " – " + BOOKING_LABELS[booking ?? ""] + ". Koppints a váltáshoz."
-  );
-}
-
-function attachBooking(card, day, dateLabel, initial) {
-  let current = initial ?? "";
+function attachBooking(card, day, initial) {
+  // One state only: marked or not. Any stored value (older "pencil" rows too)
+  // counts as marked; unmarking writes null.
+  let current = Boolean(initial);
   let saved = current;
   let timer = null;
-  const dateCell = card.querySelector(".dayLeft");
-  renderBooking(card, dateLabel, current);
-  const cycle = () => {
-    current = BOOKING_NEXT[current];
-    renderBooking(card, dateLabel, current);
-    navigator.vibrate?.(8);
-    // Debounce, so tapping through the states saves only the final one.
+  const render = () => { card.dataset.booking = current ? "booked" : ""; };
+  render();
+
+  const toggle = () => {
+    current = !current;
+    render();
+    navigator.vibrate?.(10);
     clearTimeout(timer);
     timer = setTimeout(async () => {
       const target = current;
       try {
-        await savePlannerBooking(day, target || null);
+        await savePlannerBooking(day, target ? "booked" : null);
         saved = target;
       } catch (error) {
         current = saved;
-        renderBooking(card, dateLabel, current);
+        render();
         setSync("Mentési hiba", "error");
         showToast(friendlyError(error));
       }
-    }, 400);
+    }, 300);
   };
-  // Keep focus where it is, so a tap does not trigger the card focus blur.
-  dateCell.addEventListener("pointerdown", (event) => event.preventDefault());
-  dateCell.addEventListener("click", cycle);
-  dateCell.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    cycle();
+
+  let startX = 0;
+  let startY = 0;
+  let distance = 0;
+  let tracking = false;
+  let horizontal = false;
+  card.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    // Leave text selection inside an open textarea alone.
+    if (event.target === document.activeElement && event.target.tagName === "TEXTAREA") return;
+    startX = event.clientX;
+    startY = event.clientY;
+    distance = 0;
+    tracking = true;
+    horizontal = false;
   });
+  card.addEventListener("pointermove", (event) => {
+    if (!tracking) return;
+    const x = event.clientX - startX;
+    const y = event.clientY - startY;
+    if (!horizontal) {
+      if (Math.abs(y) > 10 && Math.abs(y) >= Math.abs(x)) { tracking = false; return; }
+      if (x < 10 || x < Math.abs(y) * 1.5) return;
+      horizontal = true;
+      card.classList.add("swiping");
+      card.setPointerCapture?.(event.pointerId);
+    }
+    distance = Math.max(0, Math.min(x, BOOKING_SWIPE_PX * 1.5));
+    card.style.translate = Math.round(distance * 0.4) + "px 0";
+  });
+  const finish = () => {
+    if (!tracking) return;
+    tracking = false;
+    if (!horizontal) return;
+    card.classList.remove("swiping");
+    card.style.translate = "";
+    if (distance >= BOOKING_SWIPE_PX) toggle();
+  };
+  card.addEventListener("pointerup", finish);
+  card.addEventListener("pointercancel", finish);
 }
 
 function queuePlannerSave(day, value) {
@@ -786,11 +812,11 @@ async function renderPlanner() {
       card.classList.toggle("today", day === today);
       card.classList.toggle("past", day < today);
       card.innerHTML =
-        '<div class="dayLeft" role="button" tabindex="0"><div class="dayDate">' + huDayLabel(date) + '</div></div>' +
+        '<div class="dayLeft"><div class="dayDate">' + huDayLabel(date) + '</div></div>' +
         '<div class="dayMid"><textarea class="dayInput" placeholder="Tervek…" rows="1" maxlength="4000"></textarea></div>' +
         '<div class="dayRight">' + weatherHtml + "</div>";
       plannerDays.appendChild(card);
-      attachBooking(card, day, huDayLabel(date), row.booking);
+      attachBooking(card, day, row.booking);
       const input = card.querySelector(".dayInput");
       input.value = row.text ?? "";
       const autoSize = () => {
