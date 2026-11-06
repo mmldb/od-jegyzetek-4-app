@@ -1,5 +1,5 @@
 import { isConfigured, supabase } from "./supabase.js";
-import { createHealthFeature } from "./health.js?v=4.2.0";
+import { createHealthFeature } from "./health.js?v=4.2.1";
 
 const $ = (id) => document.getElementById(id);
 const PLANNER_VALUE = "__planner__";

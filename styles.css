@@ -349,8 +349,9 @@ li:active { cursor: grabbing; }
   line-height: 1;
 }
 
-/* Booking indicator: a 4px strip on the card's left edge, nothing when free.
-   Dashed = pencil (tentative), solid = booked. Tap the date to cycle. */
+/* Booking indicator: a thin line just inside the card's left edge, nothing when free.
+   Inset so the card colour frames it; at the very edge a solid black line would
+   merge with the black page background. Dashed = pencil, solid = booked. Tap the date to cycle. */
 .dayLeft { cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; }
 .dayLeft:focus-visible { outline: 2px solid rgba(0,0,0,.45); outline-offset: -4px; border-radius: 8px; }
 
@@ -358,10 +359,11 @@ li:active { cursor: grabbing; }
 .dayCard[data-booking="booked"]::before {
   content: "";
   position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
+  left: 6px;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 2px;
   pointer-events: none;
 }
 .dayCard[data-booking="pencil"]::before {
