@@ -327,7 +327,7 @@ li:active { cursor: grabbing; }
 .dayCard.past {
   filter: grayscale(0.15); 
 }
-.dayCard.past .dayLeft,
+.dayCard.past .dayDate,
 .dayCard.past .dayInput {
   opacity: 0.6;
 }
@@ -348,6 +348,26 @@ li:active { cursor: grabbing; }
   color: rgba(0,0,0,0.85);
   line-height: 1;
 }
+
+/* Booking indicator: a 4px strip on the card's left edge, nothing when free.
+   Dashed = pencil (tentative), solid = booked. Tap the date to cycle. */
+.dayLeft { cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; }
+.dayLeft:focus-visible { outline: 2px solid rgba(0,0,0,.45); outline-offset: -4px; border-radius: 8px; }
+
+.dayCard[data-booking="pencil"]::before,
+.dayCard[data-booking="booked"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  pointer-events: none;
+}
+.dayCard[data-booking="pencil"]::before {
+  background: repeating-linear-gradient(180deg, rgba(0,0,0,0.75) 0 5px, transparent 5px 9px);
+}
+.dayCard[data-booking="booked"]::before { background: rgba(0,0,0,0.8); }
 
 .dayRight {
   height: 100%;

@@ -1,5 +1,5 @@
 import { isConfigured, supabase } from "./supabase.js";
-import { createHealthFeature } from "./health.js?v=4.1.3";
+import { createHealthFeature } from "./health.js?v=4.2.0";
 
 const $ = (id) => document.getElementById(id);
 const PLANNER_VALUE = "__planner__";
@@ -72,7 +72,13 @@ const state = {
   saveTimers: new Map(),
   realtimeChannel: null,
   healthActive: false,
+  plannerRevision: 0,
+  plannerStale: false,
 };
+
+// Tapping the date cycles: free -> pencil -> booked -> free.
+const BOOKING_NEXT = { "": "pencil", pencil: "booked", booked: "" };
+const BOOKING_LABELS = { "": "szabad", pencil: "pencil (opció)", booked: "booked (lekötve)" };
 
 const previewStore = {
   categories: [
@@ -86,8 +92,8 @@ const previewStore = {
     { id: "preview-todo-4", category_id: "preview-category-shopping", text: "Zabtej", done: false, sort_order: 1, color_idx: 5 },
   ],
   plannerDays: new Map([
-    [toISODate(new Date()), { text: "Közös vacsora 19:00", work: false }],
-    [toISODate(addDays(new Date(), 1)), { text: "Bevásárlás hazafelé", work: false }],
+    [toISODate(new Date()), { text: "Közös vacsora 19:00", work: false, booking: "booked" }],
+    [toISODate(addDays(new Date(), 1)), { text: "Bevásárlás hazafelé", work: false, booking: "pencil" }],
   ]),
 };
 
@@ -181,6 +187,9 @@ function friendlyError(error) {
   if (!navigator.onLine) return "Nincs internetkapcsolat. A módosítás még nincs elmentve.";
   if (error?.code === "42501") return "Ehhez a művelethez nincs jogosultságod.";
   if (error?.code === "23505") return "Ez a bejegyzés már létezik.";
+  if (error?.code === "42703" || error?.code === "PGRST204") {
+    return "Hiányzik a booking oszlop: futtasd a supabase/migrations SQL-t.";
+  }
   return "Nem sikerült a művelet. Próbáld meg újra.";
 }
 
@@ -535,20 +544,87 @@ async function fetchPlannerWeek(weekStartDate) {
 async function savePlannerDay(day, value) {
   setSync("Mentés…", "saving");
   if (state.preview) {
-    previewStore.plannerDays.set(day, { ...value });
+    previewStore.plannerDays.set(day, { ...previewStore.plannerDays.get(day), text: value.text });
     if (state.saveQueue.get(day) === value) state.saveQueue.delete(day);
     setSync("Preview – helyben mentve", "saved");
     return;
   }
+  // Only the text column is written here, so a concurrent booking change on
+  // the same day is never overwritten by typing.
   const { error } = await workspaceQuery("planner_days").upsert({
     workspace_id: state.workspaceId,
     day,
     text: value.text,
-    work: value.work,
   }, { onConflict: "workspace_id,day" });
   if (error) throw error;
   if (state.saveQueue.get(day) === value) state.saveQueue.delete(day);
   if (state.saveQueue.size === 0) setSync("Mentve", "saved");
+}
+
+async function savePlannerBooking(day, booking) {
+  setSync("Mentés…", "saving");
+  if (state.preview) {
+    previewStore.plannerDays.set(day, { text: "", work: false, ...previewStore.plannerDays.get(day), booking });
+    setSync("Preview – helyben mentve", "saved");
+    return;
+  }
+  // Touch only the booking column: update the existing row, or create an
+  // empty one if the day has no row yet.
+  const { data, error } = await workspaceQuery("planner_days")
+    .update({ booking })
+    .eq("workspace_id", state.workspaceId)
+    .eq("day", day)
+    .select("day");
+  if (error) throw error;
+  if (!data?.length) {
+    const { error: insertError } = await workspaceQuery("planner_days")
+      .insert({ workspace_id: state.workspaceId, day, text: "", work: false, booking });
+    if (insertError?.code === "23505") return savePlannerBooking(day, booking);
+    if (insertError) throw insertError;
+  }
+  if (state.saveQueue.size === 0) setSync("Mentve", "saved");
+}
+
+function renderBooking(card, dateLabel, booking) {
+  card.dataset.booking = booking ?? "";
+  card.querySelector(".dayLeft").setAttribute(
+    "aria-label", dateLabel + " – " + BOOKING_LABELS[booking ?? ""] + ". Koppints a váltáshoz."
+  );
+}
+
+function attachBooking(card, day, dateLabel, initial) {
+  let current = initial ?? "";
+  let saved = current;
+  let timer = null;
+  const dateCell = card.querySelector(".dayLeft");
+  renderBooking(card, dateLabel, current);
+  const cycle = () => {
+    current = BOOKING_NEXT[current];
+    renderBooking(card, dateLabel, current);
+    navigator.vibrate?.(8);
+    // Debounce, so tapping through the states saves only the final one.
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const target = current;
+      try {
+        await savePlannerBooking(day, target || null);
+        saved = target;
+      } catch (error) {
+        current = saved;
+        renderBooking(card, dateLabel, current);
+        setSync("Mentési hiba", "error");
+        showToast(friendlyError(error));
+      }
+    }, 400);
+  };
+  // Keep focus where it is, so a tap does not trigger the card focus blur.
+  dateCell.addEventListener("pointerdown", (event) => event.preventDefault());
+  dateCell.addEventListener("click", cycle);
+  dateCell.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    cycle();
+  });
 }
 
 function queuePlannerSave(day, value) {
@@ -685,17 +761,22 @@ function renderTodos() {
 
 async function renderPlanner() {
   if (!state.workspaceId) return;
-  plannerRange.textContent = fmtRange(state.weekStart);
-  plannerLabel.textContent = getRelativeWeekLabel(state.weekStart);
+  const revision = ++state.plannerRevision;
+  const weekStart = state.weekStart;
+  plannerRange.textContent = fmtRange(weekStart);
+  plannerLabel.textContent = getRelativeWeekLabel(weekStart);
   const today = toISODate(new Date());
   try {
-    const [week, weather] = await Promise.all([fetchPlannerWeek(state.weekStart), getWeather()]);
+    const [week, weather] = await Promise.all([fetchPlannerWeek(weekStart), getWeather()]);
+    // A newer render (e.g. fast week switching) already started: drop this one.
+    if (revision !== state.plannerRevision) return;
+    state.plannerStale = false;
     const rows = new Map(week.map((row) => [row.day, row]));
     plannerDays.innerHTML = "";
     for (let index = 0; index < 7; index += 1) {
-      const date = addDays(state.weekStart, index);
+      const date = addDays(weekStart, index);
       const day = toISODate(date);
-      const row = rows.get(day) ?? { text: "", work: false };
+      const row = rows.get(day) ?? { text: "", work: false, booking: null };
       const weatherHtml = weather?.[day]
         ? '<div class="weather-mini">' + getWeatherIcon(weather[day].code) + "<span>" + weather[day].max + "°</span></div>"
         : "";
@@ -705,10 +786,11 @@ async function renderPlanner() {
       card.classList.toggle("today", day === today);
       card.classList.toggle("past", day < today);
       card.innerHTML =
-        '<div class="dayLeft"><div class="dayDate">' + huDayLabel(date) + '</div></div>' +
+        '<div class="dayLeft" role="button" tabindex="0"><div class="dayDate">' + huDayLabel(date) + '</div></div>' +
         '<div class="dayMid"><textarea class="dayInput" placeholder="Tervek…" rows="1" maxlength="4000"></textarea></div>' +
         '<div class="dayRight">' + weatherHtml + "</div>";
       plannerDays.appendChild(card);
+      attachBooking(card, day, huDayLabel(date), row.booking);
       const input = card.querySelector(".dayInput");
       input.value = row.text ?? "";
       const autoSize = () => {
@@ -770,8 +852,10 @@ function setupRealtime() {
       if (!isPlannerSelected()) refreshTodosOnly().catch(console.error);
     })
     .on("postgres_changes", { event: "*", schema: "public", table: "planner_days", filter }, () => {
-      const active = document.activeElement;
-      if (isPlannerSelected() && active?.tagName !== "TEXTAREA") renderPlanner();
+      if (!isPlannerSelected() || state.healthActive) return;
+      // Never re-render under the cursor; catch up once editing stops.
+      if (document.activeElement?.tagName === "TEXTAREA") state.plannerStale = true;
+      else renderPlanner();
     })
     .subscribe((status) => {
       if (status === "SUBSCRIBED") setSync("Naprakész", "saved");
@@ -993,6 +1077,15 @@ clearCheckedBtn.addEventListener("click", async () => {
   } catch (error) {
     showToast(friendlyError(error));
   }
+});
+
+plannerDays.addEventListener("focusout", () => {
+  // Wait for focus to settle: moving to the next day's textarea is not "done".
+  setTimeout(async () => {
+    if (!state.plannerStale || document.activeElement?.tagName === "TEXTAREA") return;
+    await flushPlannerSaves();
+    if (isPlannerSelected() && !state.healthActive) renderPlanner();
+  }, 0);
 });
 
 plannerPrev.addEventListener("click", async () => {

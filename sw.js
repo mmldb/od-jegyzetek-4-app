@@ -1,10 +1,10 @@
-const CACHE_NAME = "od4-shell-v15";
+const CACHE_NAME = "od4-shell-v16";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=4.1.3",
-  "./app.js?v=4.1.3",
-  "./health.js?v=4.1.3",
+  "./styles.css?v=4.2.0",
+  "./app.js?v=4.2.0",
+  "./health.js?v=4.2.0",
   "./supabase.js",
   "./config.js",
   "./favicon.svg",
